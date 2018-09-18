@@ -1,0 +1,52 @@
+server:
+  port: 9998
+sdk:
+  #host_ip: 192.168.10.106
+  host_ip: 192.168.10.212
+  port: 8000
+  token: F3Pv-TNLh
+  version: v0
+  staticGallery: analyse
+  url:
+    faceUrl: http://${sdk.host_ip}:${sdk.port}/${sdk.version}/face
+    facesUrl: http://${sdk.host_ip}:${sdk.port}/${sdk.version}/faces/gallery/${sdk.staticGallery}
+    analyseUrl: ${sdk.url.faceUrl}/gallery/${sdk.staticGallery}
+    identifyUrl: ${sdk.url.analyseUrl}/identify
+    analyseMetaUrl: ${sdk.url.analyseUrl}/meta/
+data:
+  threshold: 12
+  thread_num: 3
+  draw: 20
+  storage: /data/images
+
+spring:
+  datasource:
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/anguan?characterEncoding=utf-8&useSSL=false
+  mvc:
+    static-path-pattern: /static/**
+identify:
+  type: biggest
+  size: 100
+
+#door:
+##  switch_address: http://192.168.10.212:8899/switch/on_off_ex
+#  switch_address: http://127.0.0.1:8899/switch/on_off_ex
+#  type: 3
+#  dangerLevel: 3
+#kzcamera:
+#  resolution:
+#      width: 1280
+#      height: 720
+#jvtcamera:
+#  ip: 192.168.10.90
+#  port: 8000
+#  username: admin
+#  password: n-tech123
+sysconfig:
+  storage_url: http://192.168.10.158:9999/images/
+  upload_path: /data/upload/
+  snapshot_path: /data/images/
+  default_thresold: 0.7
