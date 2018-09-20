@@ -1,20 +1,18 @@
 package cn.anytec.anguan.controller;
 
-import cn.anytec.anguan.component.facedetect.model.dto.FaceDTO;
 import cn.anytec.anguan.component.facedetect.model.dto.PersonDTO;
 import cn.anytec.anguan.component.facedetect.model.form.FaceForm;
 import cn.anytec.anguan.httpconfig.ServerResponse;
 import cn.anytec.anguan.service.inf.IPersonFace;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.MediaType;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/face")
@@ -88,5 +86,17 @@ public class FaceController {
             return ServerResponse.createBySuccess(result);
         }
         return ServerResponse.createByErrorMessage("未检测到人脸");
+    }
+
+    // 用于测试推送数据.url: ip:port/face/test
+    @PostMapping("test")
+    public String test(HttpServletRequest request) {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+
+        parameterMap.forEach((K, V) -> {
+            System.out.println(K + ":");
+            Arrays.asList(V).forEach(System.out::println);
+        });
+        return "hhh";
     }
 }

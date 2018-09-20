@@ -1,20 +1,18 @@
 package cn.anytec.anguan.service;
 
 import cn.anytec.anguan.component.facedetect.model.Camera;
-import cn.anytec.anguan.component.facedetect.model.IdentifyPojo;
-import cn.anytec.anguan.component.facedetect.model.dto.FaceDTO;
 import cn.anytec.anguan.component.facedetect.model.dto.PersonDTO;
 import cn.anytec.anguan.component.facedetect.model.form.FaceForm;
-import cn.anytec.anguan.component.facedetect.model.sdkmodel.IdentifyFace;
 import cn.anytec.anguan.component.facedetect.model.sdkmodel.MatchFace;
 import cn.anytec.anguan.core.exception.AnguanException;
 import cn.anytec.anguan.repository.CameraRepository;
 import cn.anytec.anguan.service.inf.IPersonFace;
 import cn.anytec.anguan.util.FaceHelper;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,42 +88,47 @@ public class PersonFace implements IPersonFace{
     @Override
     public String analyse(MultipartFile photo, String macAddress) throws IOException {
 
-        Optional<Camera> cameraOptional = repository.findByMacAddress(macAddress);
+        Camera camera = repository.findByMacAddress(macAddress);
 
-        if (cameraOptional.isPresent()) {
+        String pushIp = Optional.ofNullable(camera)
+                .map(Camera::getPushIp)
+                .orElseThrow(() -> new AnguanException("MacAddress error"));
 
-            Camera camera = cameraOptional.get();
-            String pushIp = camera.getPushIp();
-            Map<String, Object> resultMap = new HashMap<>();
+        Map<String, Object> resultMap = new HashMap<>();
 
-            IdentifyPojo identifyPojo;
-            if (photo != null) {
-                identifyPojo = FaceHelper.identify(photo.getBytes());
-            }else {
-                throw new AnguanException("图片不能为空");
+        Map<String, List<MatchFace>> identifyPojo;
+        if (photo != null) {
+            identifyPojo = FaceHelper.identify(photo.getBytes());
+        }else {
+            throw new AnguanException("图片不能为空");
+        }
+
+        identifyPojo.forEach((String K, List<MatchFace> faces) -> {
+            List<String> strings = new ArrayList<>();
+            faces.forEach(face -> {
+                strings.add(face.getFace().getMeta());
+            });
+            if (CollectionUtil.isNotEmpty(strings)) {
+                resultMap.put("meta", strings);
             }
+        });
 
-            List<MatchFace> matchFaces;
-            for (Map.Entry<String, List<MatchFace>> entry : identifyPojo.getResults().entrySet()) {
-                matchFaces = entry.getValue();
-                MatchFace matchFace = matchFaces.get(0);
-                IdentifyFace face = matchFace.getFace();
-                resultMap.put("meta", face.getMeta());
-                // do something...
+        String url = "http://" + pushIp;
 
-                if (MapUtil.isNotEmpty(resultMap)) {
-                    break;
-                }
-            }
-
-            String url = "http://" + pushIp;
-
-            return HttpRequest.post(url)
+        HttpResponse httpResponse = null;
+        try {
+            httpResponse = HttpRequest.post(url)
                     .form(resultMap)
                     .timeout(10000)
-                    .execute().body();
-        }else {
-            throw new AnguanException("Mac地址错误");
+                    .execute();
+        } catch (Exception e) {
+            throw new AnguanException(httpResponse.getStatus(), httpResponse.body());
         }
+
+        if (httpResponse.getStatus() != HttpStatus.HTTP_OK) {
+            throw new AnguanException(httpResponse.getStatus(), "推送数据时发生错误!");
+        }
+
+        return httpResponse.body();
     }
 }

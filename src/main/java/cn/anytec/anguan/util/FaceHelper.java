@@ -5,6 +5,7 @@ import cn.anytec.anguan.component.facedetect.model.IdentifyPojo;
 import cn.anytec.anguan.component.facedetect.model.dto.FaceDTO;
 import cn.anytec.anguan.component.facedetect.model.dto.PersonDTO;
 import cn.anytec.anguan.component.facedetect.model.form.FaceForm;
+import cn.anytec.anguan.component.facedetect.model.sdkmodel.MatchFace;
 import cn.anytec.anguan.config.GeneralConfig;
 import cn.anytec.anguan.core.exception.AnguanException;
 import cn.anytec.anguan.httpconfig.ResponseCode;
@@ -19,6 +20,7 @@ import com.alibaba.fastjson.TypeReference;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -111,10 +113,11 @@ public class FaceHelper {
 
         PersonDTO result = findOne(face.getId_number());
 
-        if (null == result) {
-            throw new AnguanException("id_number不存在");
-        }
-        String url = config.getFaceUrl() + "/id/" + result.getId();
+        String id_number = Optional.ofNullable(result)
+                .map(PersonDTO::getId)
+                .orElseThrow(() -> new AnguanException("id_number不存在"));
+
+        String url = config.getFaceUrl() + "/id/" + id_number;
 
         HttpResponse httpResponse = HttpRequest.delete(url)
                 .header("Authorization", "Token " + config.getToken())
@@ -131,7 +134,7 @@ public class FaceHelper {
         }
     }
 
-    public static IdentifyPojo identify(byte[] photo) {
+    public static Map<String, List<MatchFace>> identify(byte[] photo) {
 
         HttpResponse httpResponse = HttpRequest.post(config.getIdentifyUrl())
                 .header("Authorization", "Token " + config.getToken())
@@ -140,9 +143,13 @@ public class FaceHelper {
                 .execute();
 
         int status = httpResponse.getStatus();
-        if (status == 200) {
+        if (status == HttpStatus.HTTP_OK) {
             log.info("【检测人脸】 成功检测到人脸");
-            return JSON.parseObject(httpResponse.body(), new TypeReference<IdentifyPojo>() {});
+            IdentifyPojo JSONResult = JSON.parseObject(httpResponse.body(), new TypeReference<IdentifyPojo>() {});
+            Map<String, List<MatchFace>> identifyPojo1 =
+                    Optional.ofNullable(JSONResult).map(IdentifyPojo::getResults).
+                            orElseThrow(() -> new AnguanException(status, httpResponse.body()));
+            return identifyPojo1;
         }
         log.error("【检测人脸】 失败, " + httpResponse.body());
         return null;
