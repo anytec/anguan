@@ -1,4 +1,4 @@
-package cn.anytec.anguan.component.facedetect.model;
+package cn.anytec.anguan.po;
 
 
 import org.hibernate.validator.constraints.Length;

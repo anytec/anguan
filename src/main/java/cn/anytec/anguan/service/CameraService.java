@@ -1,6 +1,7 @@
 package cn.anytec.anguan.service;
 
-import cn.anytec.anguan.component.facedetect.model.Camera;
+import cn.anytec.anguan.po.Camera;
+import cn.anytec.anguan.core.exception.AnguanException;
 import cn.anytec.anguan.repository.CameraRepository;
 import cn.anytec.anguan.service.inf.ICamera;
 import cn.hutool.core.util.StrUtil;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import javax.persistence.criteria.Predicate;
 import java.util.ArrayList;
@@ -55,8 +57,19 @@ public class CameraService implements ICamera {
 
     @Override
     public Camera save(Camera camera) {
+        Assert.isTrue(camera != null, "不能保存, 设备信息为空");
         camera.setId(null);
-        return repository.save(camera);
+        String macAddress = camera.getMacAddress();
+
+        if (StrUtil.isNotBlank(macAddress)) {
+            Camera byMacAddress = this.repository.findByMacAddress(macAddress);
+            if (null == byMacAddress) {
+                return repository.save(camera);
+            }else {
+                throw new AnguanException("MacAddress 已存在");
+            }
+        }
+        return null;
     }
 
     @Override

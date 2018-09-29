@@ -1,11 +1,16 @@
 package cn.anytec.anguan.controller;
 
-import cn.anytec.anguan.component.facedetect.model.Camera;
+import cn.anytec.anguan.po.Camera;
 import cn.anytec.anguan.httpconfig.ServerResponse;
 import cn.anytec.anguan.service.inf.ICamera;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.apache.shiro.authz.annotation.RequiresGuest;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.shiro.authz.annotation.RequiresUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
@@ -16,7 +21,7 @@ import javax.validation.Valid;
 import java.util.Optional;
 
 @RestController
-@Api(value = "设备接口")
+@Api(value = "设备接口", tags = "设备操作接口")
 @RequestMapping("camera")
 public class CameraController {
 
@@ -25,11 +30,15 @@ public class CameraController {
     @Autowired
     private ICamera service;
 
+    @RequiresPermissions("delUser")
+    @ApiOperation("查询设备列表")
     @GetMapping("")
     public ServerResponse findAll(@RequestParam(required = false, defaultValue = "0") Integer pageNum,
                                   @RequestParam(required = false, defaultValue = "10") Integer pageSize,
                                   @RequestParam(required = false) String macAddress, @RequestParam(required = false) String pushIp) {
 
+        macAddress = macAddress != null ? macAddress.trim() : macAddress;
+        pushIp = pushIp != null ? pushIp.trim() : pushIp;
         Page result = service.findAll(pageNum, pageSize, macAddress, pushIp);
         if (null == result) {
             return ServerResponse.createByErrorMessage("【查找设备】 未找到任何设备");
@@ -37,6 +46,8 @@ public class CameraController {
         return ServerResponse.createBySuccess(result);
     }
 
+    @RequiresUser
+    @ApiOperation("根据id查询单个设备详细信息")
     @GetMapping("{id}")
     public ServerResponse findOne(@PathVariable Integer id) {
 
@@ -52,6 +63,7 @@ public class CameraController {
         return ServerResponse.createBySuccess(result);
     }
 
+    @ApiOperation("添加设备")
     @PostMapping("")
     public ServerResponse add(@Valid  Camera camera, BindingResult bindingResult) {
 
@@ -67,6 +79,7 @@ public class CameraController {
         return ServerResponse.createBySuccess("设备添加成功", result);
     }
 
+    @ApiOperation("修改设备")
     @PutMapping("")
     public ServerResponse update(@Valid @RequestBody Camera camera, BindingResult bindingResult) {
 
@@ -86,6 +99,7 @@ public class CameraController {
         return ServerResponse.createBySuccess("设备修改成功", result);
     }
 
+    @ApiOperation("根据id删除设备")
     @DeleteMapping("{id}")
     public ServerResponse delete(@PathVariable Integer id) {
 
