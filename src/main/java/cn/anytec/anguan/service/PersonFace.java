@@ -1,6 +1,6 @@
 package cn.anytec.anguan.service;
 
-import cn.anytec.anguan.component.facedetect.model.Camera;
+import cn.anytec.anguan.po.Camera;
 import cn.anytec.anguan.component.facedetect.model.dto.PersonDTO;
 import cn.anytec.anguan.component.facedetect.model.form.FaceForm;
 import cn.anytec.anguan.component.facedetect.model.sdkmodel.MatchFace;
@@ -88,7 +88,12 @@ public class PersonFace implements IPersonFace{
     @Override
     public String analyse(MultipartFile photo, String macAddress) throws IOException {
 
-        Camera camera = repository.findByMacAddress(macAddress);
+        Camera camera = null;
+        try {
+            camera = repository.findByMacAddress(macAddress);
+        } catch (Exception e) {
+            throw new AnguanException("Mac地址错误");
+        }
 
         String pushIp = Optional.ofNullable(camera)
                 .map(Camera::getPushIp)

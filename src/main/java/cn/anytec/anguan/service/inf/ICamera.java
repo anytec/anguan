@@ -1,6 +1,6 @@
 package cn.anytec.anguan.service.inf;
 
-import cn.anytec.anguan.component.facedetect.model.Camera;
+import cn.anytec.anguan.po.Camera;
 import org.springframework.data.domain.Page;
 
 import java.util.Optional;
